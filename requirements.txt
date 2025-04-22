@@ -7,3 +7,5 @@ matplotlib
 seaborn
 gunicorn
 flask-cors
+gunicorn==20.1.0
+pymongo[srv]==4.3.3
