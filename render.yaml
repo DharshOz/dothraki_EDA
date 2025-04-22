@@ -1,0 +1,11 @@
+services:
+  - type: web
+    name: dothraki-eda
+    runtime: python
+    buildCommand: "./build.sh"
+    startCommand: "gunicorn app:app"
+    envVars:
+      - key: MONGO_URI
+        value: "mongodb+srv://vgugan16:gugan2004@cluster0.qyh1fuo.mongodb.net/dL?retryWrites=true&w=majority"
+      - key: PYTHON_VERSION
+        value: "3.9.5"
