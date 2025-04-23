@@ -13,6 +13,7 @@ from sklearn.ensemble import RandomForestRegressor
 from sklearn.tree import DecisionTreeRegressor
 from sklearn.linear_model import LinearRegression
 from sklearn.metrics import mean_absolute_error, mean_squared_error, r2_score
+from pandas.plotting import parallel_coordinates
 
 # Flask App Config
 app = Flask(__name__)
@@ -67,12 +68,45 @@ def perform_eda(df, name):
             print(f"Not enough numeric columns in {name}")
             return False
 
+        # Correlation Matrix
         plt.figure(figsize=(10, 8))
         sns.heatmap(numeric_df.corr(), annot=True, cmap="coolwarm", fmt=".2f")
         plt.title(f'Correlation - {name}')
         plt.tight_layout()
         plt.savefig(f'static/corr_{name}.png')
         plt.close()
+
+        # Pairplot (sample first 100 rows if large dataset)
+        sample_size = min(100, len(numeric_df))
+        plt.figure(figsize=(12, 10))
+        sns.pairplot(numeric_df.sample(sample_size))
+        plt.suptitle(f'Pairplot - {name} (Sample of {sample_size})', y=1.02)
+        plt.savefig(f'static/pairplot_{name}.png')
+        plt.close()
+
+        # Parallel Coordinates Plot (piplot)
+        if len(numeric_df.columns) > 1:
+            plt.figure(figsize=(15, 8))
+            parallel_coordinates(numeric_df.sample(min(100, len(numeric_df))),
+                                 'Gas Emission Value' if 'Gas Emission Value' in numeric_df.columns else
+                                 numeric_df.columns[0],
+                                 color=('#556270', '#4ECDC4', '#C7F464', '#FF6B6B', '#C44D58'))
+            plt.title(f'Parallel Coordinates Plot - {name}')
+            plt.xticks(rotation=45)
+            plt.grid(alpha=0.3)
+            plt.tight_layout()
+            plt.savefig(f'static/piplot_{name}.png')
+            plt.close()
+
+        # Distribution Plots
+        for col in numeric_df.columns:
+            plt.figure(figsize=(8, 6))
+            sns.histplot(numeric_df[col], kde=True)
+            plt.title(f'Distribution of {col} - {name}')
+            plt.tight_layout()
+            plt.savefig(f'static/dist_{name}_{col}.png')
+            plt.close()
+
         return True
     except Exception as e:
         print(f"EDA failed for {name}: {str(e)}")
@@ -146,20 +180,18 @@ def train_models():
 
     return results
 
-# Routes (unchanged)
+
+# Routes
 @app.route('/')
 def home():
     return "<h2>Flask App is Running!</h2>"
 
-# Add this import at the top if not present
-from flask import send_from_directory
 
-# Update the static file route
 @app.route('/static/<path:filename>')
 def serve_static(filename):
     return send_from_directory(os.path.join(app.root_path, 'static'), filename)
 
-# Update the correlation image route
+
 @app.route('/correlation/<name>')
 def get_correlation_image(name):
     path = f'corr_{name}.png'
@@ -167,6 +199,35 @@ def get_correlation_image(name):
         return send_from_directory('static', path, mimetype='image/png')
     except FileNotFoundError:
         return jsonify({"error": "Image not found"}), 404
+
+
+@app.route('/piplot/<name>')
+def get_piplot_image(name):
+    path = f'piplot_{name}.png'
+    try:
+        return send_from_directory('static', path, mimetype='image/png')
+    except FileNotFoundError:
+        return jsonify({"error": "Image not found"}), 404
+
+
+@app.route('/pairplot/<name>')
+def get_pairplot_image(name):
+    path = f'pairplot_{name}.png'
+    try:
+        return send_from_directory('static', path, mimetype='image/png')
+    except FileNotFoundError:
+        return jsonify({"error": "Image not found"}), 404
+
+
+@app.route('/distribution/<name>/<column>')
+def get_distribution_image(name, column):
+    path = f'dist_{name}_{column}.png'
+    try:
+        return send_from_directory('static', path, mimetype='image/png')
+    except FileNotFoundError:
+        return jsonify({"error": "Image not found"}), 404
+
+
 @app.route('/get_eda_results')
 def get_eda_results():
     try:
@@ -185,8 +246,24 @@ def get_eda_results():
         return jsonify({
             "status": "success",
             "eda_results": {
-                "correlation_image_bookq": "/static/corr_bookq.png",
-                "correlation_image_mean": "/static/corr_mean.png"
+                "correlation_images": {
+                    "bookq": "/static/corr_bookq.png",
+                    "mean": "/static/corr_mean.png"
+                },
+                "piplot_images": {
+                    "bookq": "/static/piplot_bookq.png",
+                    "mean": "/static/piplot_mean.png"
+                },
+                "pairplot_images": {
+                    "bookq": "/static/pairplot_bookq.png",
+                    "mean": "/static/pairplot_mean.png"
+                },
+                "distribution_images": {
+                    "bookq": [f"/static/dist_bookq_{col}.png" for col in
+                              df_bookq.select_dtypes(include=['number']).columns],
+                    "mean": [f"/static/dist_mean_{col}.png" for col in
+                             df_mean.select_dtypes(include=['number']).columns]
+                }
             },
             "model_metrics": model_metrics
         })
