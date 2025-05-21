@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Real-time Sensor Data</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #222;
+            color: #fff;
+        }
+        h1 {
+            text-align: center;
+        }
+        .data-container {
+            display: flex;
+            justify-content: center;
+            margin-top: 20px;
+        }
+        .data-item {
+            margin: 0 20px;
+            padding: 10px;
+            background-color: #444;
+            border-radius: 5px;
+            text-align: center;
+        }
+        .data-item p {
+            margin: 5px 0;
+        }
+    </style>
+</head>
+<body>
+
+    <h1>Real-time Sensor Data</h1>
+    
+    <div class="data-container">
+        <div class="data-item">
+            <h3>Location</h3>
+            <p id="location">Loading...</p>
+        </div>
+        <div class="data-item">
+            <h3>Temperature</h3>
+            <p id="temperature">Loading...</p>°C
+        </div>
+        <div class="data-item">
+            <h3>Gas Emission Value</h3>
+            <p id="gas">Loading...</p>
+        </div>
+        <div class="data-item">
+            <h3>Threshold</h3>
+            <p id="threshold">Loading...</p>
+        </div>
+        <div class="data-item">
+            <h3>Timestamp</h3>
+            <p id="timestamp">Loading...</p>
+        </div>
+    </div>
+
+    <!-- Include socket.io script -->
+    <script src="http://localhost:3000/socket.io/socket.io.js"></script>
+    <script>
+        const socket = io(); // Connect to the server
+
+        socket.on('data', (data) => {
+            // Update the HTML elements with the received data
+            document.getElementById('location').innerText = data.location;
+            document.getElementById('temperature').innerText = data.temperature;
+            document.getElementById('gas').innerText = data.gas;
+            document.getElementById('threshold').innerText = data.threshold;
+            document.getElementById('timestamp').innerText = new Date(data.timestamp).toLocaleString();
+        });
+    </script>
+</body>
+</html>
